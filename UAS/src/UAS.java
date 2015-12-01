@@ -94,6 +94,7 @@ public class UAS
 		}
 		keyboard.close();
 		robot.close();
+		
 	}
 	
 	public void printMenu()
