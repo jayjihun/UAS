@@ -21,7 +21,7 @@ class University
 	{
 		String result = "";
 		result+=id+"\t";
-		result+=name+"\t\t\t";
+		result+=name+"\r\t\t\t\t\t\t";
 		result+=cap+"\t\t";
 		result+=group+"\t";
 		result+=gpaportion+"\t";
@@ -48,7 +48,7 @@ class Student
 	{
 		String result = "";
 		result+=id+"\t";
-		result+=name+"\t\t";
+		result+=name+"\r\t\t\t\t\t";
 		result+=csat+"\t\t";
 		result+=gpa;
 		return result;

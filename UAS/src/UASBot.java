@@ -397,7 +397,7 @@ public class UASBot
 		Vector<University> appliedUnis = null;
 		try
 		{
-			String sql = "SELECT u_id, name, capacity, group, weight, applied";
+			String sql = "SELECT u_id, university.name, capacity, groupp, weight, applied";
 			sql += " FROM student as s NATURAL JOIN application JOIN university using (u_id)";
 			sql += " WHERE s_id=?;";
 			PreparedStatement stmt = conn.prepareStatement(sql);
@@ -487,9 +487,7 @@ public class UASBot
 		if(uni.cap<1)
 			return new CapacityRangeErrorMessage();
 		if(!(uni.group == 'A' || uni.group == 'B' || uni.group == 'C'))
-		{
 			return new GroupRangeErrorMessage();
-		}
 		if(uni.gpaportion<0)
 			return new GPAPortionRangeErrorMessage();
 		return null;
@@ -580,10 +578,10 @@ public class UASBot
 		University uni=null;
 		try
 		{
-			String sql = "SELECT s_id, name, csat_score, school_score";
-			sql+=" FROM university as u NATURAL JOIN application JOIN studing using (s_id)";
+			String sql = "SELECT s_id, student.name, csat_score, school_score";
+			sql+=" FROM university as u NATURAL JOIN application JOIN student using (s_id)";
 			sql+=" WHERE u_id = ?";
-			sql+=" ORDER BY (weight * school_score+csat_score, school_score);";
+			sql+=" ORDER BY weight * school_score+csat_score DESC, school_score DESC;";
 			PreparedStatement stmt = conn.prepareStatement(sql);
 			stmt.setInt(1, u_id);
 			ResultSet rs = stmt.executeQuery();
@@ -596,33 +594,67 @@ public class UASBot
 			return null;
 		}
 		
-		int cap = uni.cap;
+		int capacity = uni.cap;
 
 		//1. if under capacity, pass them all.
-		if(stus.size()<=cap)
+		if(stus.size()<=capacity)
 			return stus;
 		
 		//2. now, applicants are more than capacity.
-		return null;
+		int max_capacity = capacity + (int)Math.ceil(0.1*capacity);
+		int size = stus.size();
+		int end = max_capacity<size ? max_capacity : size-1; 
+		int i = end;
+		int cut = end;
+		int last_gpa = stus.elementAt(end).gpa;
+		int last_sat = stus.elementAt(end).csat;
+		for(i = end; i>=0; i--)
+		{
+			boolean different = false;
+			Student stu = stus.elementAt(i);
+			if (stu.gpa != last_gpa || stu.csat != last_sat)
+			{
+				cut = i;
+				last_gpa = stu.gpa;
+				last_sat = stu.csat;
+				different = true;
+			}
+			if(i<=capacity-1)//now probing inside capacity. if not ALLDROP, cut immediately.
+			{
+				if(cut != max_capacity)// not ALLDROP
+					break;
+				if(different)// if ALLDROP, cut where difference detected.
+					break;
+			}
+		}
+		Vector<Student> cuted = new Vector<Student>(0);
+		for(int j=0; j<=cut; j++)
+			cuted.addElement(stus.elementAt(j));
+		return cuted;
 	}
 	
 	private void print_stus(Vector<Student> stus)
 	{
-		pl("-----------------------------------------------------------------");
-		pl("id\tname\t\tcsat_score\tschoole_score");
-		pl("-----------------------------------------------------------------");
+		print_dash();
+		pl("id\tname\t\t\t\tcsat_score\tschool_score");
+		print_dash();
 		for(Student stu : stus)
 			pl(stu);
-		pl("-----------------------------------------------------------------");
+		print_dash();
 	}
 	
 	private void print_unis(Vector<University> unis)
 	{
-		pl("-----------------------------------------------------------------");
-		pl("id\tname\t\t\tcapacity\tgroup\tweight\tapplied");
-		pl("-----------------------------------------------------------------");
+		print_dash();
+		pl("id\tname\t\t\t\t\tcapacity\tgroup\tweight\tapplied");
+		print_dash();
 		for(University uni : unis)
 			pl(uni);
-		pl("-----------------------------------------------------------------");	
+		print_dash();
+	}
+	
+	private void print_dash()
+	{
+		pl("---------------------------------------------------------------------------------------");
 	}
 }

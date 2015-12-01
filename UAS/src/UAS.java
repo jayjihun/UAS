@@ -90,7 +90,7 @@ public class UAS
 			}
 			if(op==MENU12)
 				break;
-			pl("\n\n");
+			pl("");
 		}
 		keyboard.close();
 		robot.close();
