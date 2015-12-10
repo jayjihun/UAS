@@ -6,9 +6,6 @@ import java.sql.SQLException;
 import java.util.Vector;
 public class UASBot
 {
-	public int nextUniId;
-	public int nextStuId;
-	
 	private static final String serverName = "147.46.15.238";
 	private static final String dbName = "DB-2013-11557";
 	private static final String userName = "DB-2013-11557";
@@ -18,9 +15,6 @@ public class UASBot
 	
 	public UASBot() throws Exception
 	{
-		nextUniId = 0;
-		nextStuId = 0;
-		
 		try
 		{
 			conn = DriverManager.getConnection(url, userName, password);
@@ -39,8 +33,7 @@ public class UASBot
 		String sql1 = "CREATE TABLE IF NOT EXISTS university(u_id int, name varchar(128), capacity int, groupp varchar(2), weight float, applied int, PRIMARY KEY(u_id));";
 		String sql2 = "CREATE TABLE IF NOT EXISTS student(s_id int, name varchar(20), csat_score int, school_score int, primary key(s_id));";
 		String sql3 = "CREATE TABLE IF NOT EXISTS application(s_id int, u_id int, group_u varchar(2), primary key(s_id,group_u), foreign key (s_id) REFERENCES student(s_id), FOREIGN KEY (u_id) REFERENCES university(u_id));";
-		String sql4 = "SELECT max(u_id) as max FROM university;";
-		String sql5 = "SELECT max(s_id) as max FROM student;";
+
 		PreparedStatement stmt1,stmt2,stmt3,stmt4,stmt5, stmt;
 		
 		try
@@ -48,23 +41,10 @@ public class UASBot
 			stmt1 = conn.prepareStatement(sql1);
 			stmt2 = conn.prepareStatement(sql2);
 			stmt3 = conn.prepareStatement(sql3);
-			stmt4 = conn.prepareStatement(sql4);
-			stmt5 = conn.prepareStatement(sql5);
 			
 			stmt1.executeQuery();
 			stmt2.executeQuery();
 			stmt3.executeQuery();
-			ResultSet rs;
-			rs = stmt4.executeQuery();
-			int uid_max = 1;
-			if(rs.next())
-				uid_max =rs.getInt("max");
-			rs = stmt5.executeQuery();
-			int sid_max = 1;
-			if (rs.next())
-				sid_max = rs.getInt("max");
-			nextUniId = uid_max+1;
-			nextStuId = sid_max+1;
 		}
 		catch(SQLException e)
 		{
@@ -159,6 +139,7 @@ public class UASBot
 		group = group_s.charAt(0);
 		
 		//now cap,group,gpaportion are type-valid
+		int nextUniId = get_nextuniid();
 		University uni = new University(nextUniId,name,cap,group,gpaportion,0);
 		Message temp = check_uni(uni);
 		if(temp != null)
@@ -176,7 +157,6 @@ public class UASBot
 			stmt.setFloat(5, uni.gpaportion);
 			stmt.setInt(6, uni.applied);
 			stmt.executeUpdate();
-			nextUniId++;
 		}
 		catch(SQLException e)
 		{
@@ -218,6 +198,7 @@ public class UASBot
 		try{gpa=Integer.parseInt(gpa_s);}catch(NumberFormatException e){return new GPARangeErrorMessage();}
 		
 		//attributes are now type-valid.
+		int nextStuId = get_nextstuid();
 		Student stu = new Student(nextStuId,name,csat,gpa);
 		Message temp = check_stu(stu);
 		if(temp != null)
@@ -233,7 +214,6 @@ public class UASBot
 			stmt.setInt(3, stu.csat);
 			stmt.setInt(4, stu.gpa);			
 			stmt.executeUpdate();
-			nextStuId++;
 		}
 		catch(SQLException e)
 		{
@@ -657,4 +637,41 @@ public class UASBot
 	{
 		pl("---------------------------------------------------------------------------------------");
 	}
+	
+	private int get_nextuniid()
+	{
+		String sql = "SELECT max(u_id) as max FROM university;";
+		try
+		{
+			PreparedStatement stmt = conn.prepareStatement(sql);
+			ResultSet rs = stmt.executeQuery();
+			int uid_max = 0;
+			if(rs.next())
+				uid_max =rs.getInt("max");
+			return uid_max+1;
+		}
+		catch(SQLException e)
+		{
+			return 1;
+		}
+	}
+	
+	private int get_nextstuid()
+	{
+		String sql = "SELECT max(s_id) as max FROM student;";
+		try
+		{
+			PreparedStatement stmt = conn.prepareStatement(sql);
+			ResultSet rs = stmt.executeQuery();
+			int sid_max = 0;
+			if (rs.next())
+				sid_max = rs.getInt("max");
+			return sid_max+1;
+		}
+		catch(SQLException e)
+		{
+			return 1;
+		}
+		
+	}	
 }
